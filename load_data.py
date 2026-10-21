@@ -194,9 +194,9 @@ def convert_fit_dir_to_csv(dir_path: str, output_dir: str = "./Dataframes") -> N
 
 
 def _print_summary(
-    n_loaded: int,
-    crc_error_files: list[str],
-    failed_files: list[tuple[str, str]],
+        n_loaded: int,
+        crc_error_files: list[str],
+        failed_files: list[tuple[str, str]],
 ) -> None:
     """Print a summary of the loading process."""
     print(f"\nNewly loaded files: {n_loaded}")
