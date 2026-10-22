@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-from utils import heart_rate_scale, load_run, step_seconds, mae_in_bpm, per_window_mae, persistence_forecast, power_to_watts
+from utils import heart_rate_scale, load_run, step_seconds, mae_in_bpm, per_window_mae, persistence_forecast, \
+    power_to_watts
 
 RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
 OUTPUT_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
@@ -15,17 +16,12 @@ TOP_FRACTION = 0.20
 MIN_POWER_WATTS = 150  # at least one of the two averages must exceed this value
 
 
-
-
 def mean_power_watts(past, future, scaler, config: dict) -> tuple[np.ndarray, np.ndarray]:
     """Mean power of the last COMPARISON_SECONDS of the past window and of the forecast horizon."""
     comparison_steps = COMPARISON_SECONDS // step_seconds(config)
     past_power = past[:, -comparison_steps:, config["past_columns"].index("power")].mean(axis=1)
     future_power = future[:, :, config["future_columns"].index("power")].mean(axis=1)
     return power_to_watts(past_power, scaler, config), power_to_watts(future_power, scaler, config)
-
-
-
 
 
 def build_subsets(past_power: np.ndarray, future_power: np.ndarray) -> dict[str, np.ndarray]:

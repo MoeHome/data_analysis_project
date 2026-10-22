@@ -18,8 +18,8 @@ DEFAULT_FUTURE_COLUMNS = (
 @dataclass(frozen=True)
 class DataConfig:
     """Settings that change the windows fed into the model."""
-    past_steps: int = 120          # 10 min at 5 s
-    future_steps: int = 12         # 1 min at 5 s
+    past_steps: int = 120  # 10 min at 5 s
+    future_steps: int = 12  # 1 min at 5 s
     train_stride: int = 2
     evaluation_stride: int = 12
     past_columns: tuple[str, ...] = DEFAULT_PAST_COLUMNS

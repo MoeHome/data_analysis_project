@@ -44,7 +44,8 @@ df["days_since_first_session"] = df["source_file"].map(df_session["days_since_fi
 
 df.to_csv("./Dataframes/df_with_all_information.csv")
 
-columns = ["source_file", "cadence", "heart_rate", "power", "TT_10", "PP_10", "RF_10", "seconds_since_session_start", "had_warmup",
+columns = ["source_file", "cadence", "heart_rate", "power", "TT_10", "PP_10", "RF_10", "seconds_since_session_start",
+           "had_warmup",
            "days_since_first_session"]
 df_ml = df[columns].copy()
 
@@ -56,9 +57,9 @@ df_ml["day_of_week_cos"] = np.cos(2 * np.pi * day_number / 7)
 seconds_per_day = 24 * 60 * 60
 
 seconds_since_midnight = (
-    df["timestamp_berlin"].dt.hour * 3600
-    + df["timestamp_berlin"].dt.minute * 60
-    + df["timestamp_berlin"].dt.second
+        df["timestamp_berlin"].dt.hour * 3600
+        + df["timestamp_berlin"].dt.minute * 60
+        + df["timestamp_berlin"].dt.second
 )
 
 df_ml["time_of_day_sin"] = np.sin(2 * np.pi * seconds_since_midnight / seconds_per_day)
