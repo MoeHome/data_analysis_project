@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from tensorflow import keras
 
-from utils import persistence_forecast, mae_in_bpm
+from utils import persistence_forecast, mae_in_bpm, heart_rate_scale, to_original_unit
 
 RUN_DIRECTORY = Path("models") / "2026-10-21_15-23_gru64"
 STEP_SECONDS = 5
@@ -28,6 +28,7 @@ def load_run(run_directory: Path) -> tuple:
 
 model, scaler, config, test_data = load_run(RUN_DIRECTORY)
 past_test, future_test, target_test = test_data["past"], test_data["future"], test_data["target"]
+bpm_scale = heart_rate_scale(scaler, config)
 
 SCALED_COLUMNS = config["scaled_columns"]
 HEART_RATE_INDEX = config["heart_rate_index"]
@@ -35,12 +36,6 @@ PAST_POWER_INDEX = config["past_columns"].index("power")
 FUTURE_POWER_INDEX = config["future_columns"].index("power")
 FUTURE_STEPS = config["future_steps"]
 seconds_ahead = np.arange(1, config["future_steps"] + 1) * STEP_SECONDS
-
-
-def to_original_unit(values: np.ndarray, column: str) -> np.ndarray:
-    """Undo standard scaling for one column (bpm, watts, ...)."""
-    column_index = SCALED_COLUMNS.index(column)
-    return values * scaler.scale_[column_index] + scaler.mean_[column_index]
 
 
 def plot_forecast_window(index: int, history_steps: int = 36, title: str | None = None) -> go.Figure:
@@ -56,19 +51,19 @@ def plot_forecast_window(index: int, history_steps: int = 36, title: str | None 
                            row_heights=[0.7, 0.3], vertical_spacing=0.05)
     figure.add_trace(go.Scatter(
         x=past_seconds,
-        y=to_original_unit(past_test[index, -history_steps:, HEART_RATE_INDEX], "heart_rate"),
+        y=to_original_unit(past_test[index, -history_steps:, HEART_RATE_INDEX], scaler, SCALED_COLUMNS, "heart_rate"),
         name="measured (past)", line_color="gray"), row=1, col=1)
     for name, (values, line) in lines.items():
-        figure.add_trace(go.Scatter(x=seconds_ahead, y=to_original_unit(values, "heart_rate"),
+        figure.add_trace(go.Scatter(x=seconds_ahead, y=to_original_unit(values, scaler, SCALED_COLUMNS, "heart_rate"),
                                     name=name, line=line), row=1, col=1)
 
     figure.add_trace(go.Scatter(
         x=past_seconds,
-        y=to_original_unit(past_test[index, -history_steps:, PAST_POWER_INDEX], "power"),
+        y=to_original_unit(past_test[index, -history_steps:, PAST_POWER_INDEX], scaler, SCALED_COLUMNS, "power"),
         line_color="steelblue", showlegend=False), row=2, col=1)
     figure.add_trace(go.Scatter(
         x=seconds_ahead,
-        y=to_original_unit(future_test[index, :, FUTURE_POWER_INDEX], "power"),
+        y=to_original_unit(future_test[index, :, FUTURE_POWER_INDEX], scaler, SCALED_COLUMNS, "power"),
         name="planned power", line=dict(color="steelblue", dash="dash")), row=2, col=1)
 
     figure.add_vline(x=0, line_dash="dash", line_color="lightgray")
@@ -83,10 +78,10 @@ def plot_forecast_window(index: int, history_steps: int = 36, title: str | None 
 def plot_error_by_horizon() -> go.Figure:
     """Compare model and persistence error over the forecast horizon."""
     figure = go.Figure()
-    figure.add_trace(go.Scatter(x=seconds_ahead, y=mae_in_bpm(persistence_test, target_test, HEART_RATE_INDEX),
+    figure.add_trace(go.Scatter(x=seconds_ahead, y=mae_in_bpm(persistence_test, target_test, bpm_scale),
                                 name="persistence", mode="lines+markers",
                                 line=dict(color="gray", dash="dot")))
-    figure.add_trace(go.Scatter(x=seconds_ahead, y=mae_in_bpm(prediction_test, target_test, HEART_RATE_INDEX),
+    figure.add_trace(go.Scatter(x=seconds_ahead, y=mae_in_bpm(prediction_test, target_test, bpm_scale),
                                 name="GRU model", mode="lines+markers",
                                 line=dict(color="crimson", width=3)))
     figure.update_layout(template="plotly_white", title="Forecast error on test data",
@@ -116,8 +111,8 @@ if __name__ == "__main__":
     persistence_test = persistence_forecast(past_test, HEART_RATE_INDEX, FUTURE_STEPS)
 
     # Sanity check: must match the numbers printed after training
-    print(f"test model: {mae_in_bpm(prediction_test, target_test, HEART_RATE_INDEX).mean():.2f} bpm | "
-          f"baseline: {mae_in_bpm(persistence_test, target_test, HEART_RATE_INDEX).mean():.2f} bpm")
+    print(f"test model: {mae_in_bpm(prediction_test, target_test, bpm_scale).mean():.2f} bpm | "
+          f"baseline: {mae_in_bpm(persistence_test, target_test, bpm_scale).mean():.2f} bpm")
 
     window_errors_bpm = (np.abs(prediction_test - target_test).mean(axis=1)
                          * scaler.scale_[SCALED_COLUMNS.index("heart_rate")])

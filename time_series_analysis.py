@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import persistence_forecast, mae_in_bpm
+from utils import persistence_forecast, mae_in_bpm, column_scale
 
 df = pd.read_csv("./Dataframes/df_ml.csv", encoding="utf-8", parse_dates=['timestamp'], index_col='timestamp')
 df_session = pd.read_csv("./Dataframes/session_data_cleaned.csv", encoding="utf-8",
@@ -303,14 +303,14 @@ print(past_is_shifted, future_is_contiguous, target_is_contiguous)
 
 FUTURE_STEPS = target_train.shape[1]  # 12 steps of 5 s = 60 s
 
-heart_rate_std = scaler.scale_[SCALED_COLUMNS.index("heart_rate")]
-print(f"heart_rate std: {heart_rate_std:.2f} bpm")
+bpm_scale = column_scale(scaler, SCALED_COLUMNS, "heart_rate")
+print(f"heart_rate scale: {bpm_scale:.2f} bpm")
 
 for name, past, target in [
     ("validation", past_validation, target_validation),
     ("test", past_test, target_test),
 ]:
-    step_errors = mae_in_bpm(persistence_forecast(past, HEART_RATE_INDEX, FUTURE_STEPS), target, heart_rate_std)
+    step_errors = mae_in_bpm(persistence_forecast(past, HEART_RATE_INDEX, FUTURE_STEPS), target, bpm_scale)
     print(
         f"{name:<10} MAE overall: {step_errors.mean():.2f} bpm | "
         f"after 5 s: {step_errors[0]:.2f} | after 60 s: {step_errors[-1]:.2f}"
@@ -383,8 +383,8 @@ for name, past, future, target in [
     ("test", past_test, future_test, target_test),
 ]:
     prediction = model.predict({"past": past, "future": future}, verbose=0)
-    model_errors = mae_in_bpm(prediction, target, heart_rate_std)
-    baseline_errors = mae_in_bpm(persistence_forecast(past, HEART_RATE_INDEX, FUTURE_STEPS), target, heart_rate_std)
+    model_errors = mae_in_bpm(prediction, target, bpm_scale)
+    baseline_errors = mae_in_bpm(persistence_forecast(past, HEART_RATE_INDEX, FUTURE_STEPS), target, bpm_scale)
     print(
         f"{name:<10} model: {model_errors.mean():.2f} bpm "
         f"(5 s: {model_errors[0]:.2f} | 60 s: {model_errors[-1]:.2f}) | "
@@ -395,7 +395,7 @@ figure = go.Figure()
 figure.add_trace(go.Scatter(y=history.history["loss"], name="train"))
 figure.add_trace(go.Scatter(y=history.history["val_loss"], name="validation"))
 figure.add_hline(
-    y=3.91 / heart_rate_std, line_dash="dash", annotation_text="persistence (validation)"
+    y=3.91 / bpm_scale, line_dash="dash", annotation_text="persistence (validation)"
 )
 figure.update_layout(
     title="Training curve (MAE, standardized)",
@@ -408,8 +408,8 @@ figure.show()
 def evaluate_split(past: np.ndarray, future: np.ndarray, target: np.ndarray) -> dict:
     """Return model and baseline MAE in bpm for one data split."""
     prediction = model.predict({"past": past, "future": future}, verbose=0)
-    model_errors = mae_in_bpm(prediction, target, heart_rate_std)
-    baseline_errors = mae_in_bpm(persistence_forecast(past, HEART_RATE_INDEX, FUTURE_STEPS), target, heart_rate_std)
+    model_errors = mae_in_bpm(prediction, target, bpm_scale)
+    baseline_errors = mae_in_bpm(persistence_forecast(past, HEART_RATE_INDEX, FUTURE_STEPS), target, bpm_scale)
     return {
         "model_mae_bpm": round(float(model_errors.mean()), 3),
         "model_mae_60s_bpm": round(float(model_errors[-1]), 3),
@@ -425,6 +425,7 @@ def save_run_artifacts(run_directory: Path) -> None:
         "past_columns": PAST_COLUMNS,
         "future_columns": FUTURE_COLUMNS,
         "scaled_columns": SCALED_COLUMNS,
+        "step_seconds": int(pd.Timedelta(RESAMPLE_INTERVAL).total_seconds()),
         "past_steps": int(PAST_STEPS),
         "future_steps": int(FUTURE_STEPS),
         "heart_rate_index": HEART_RATE_INDEX,
