@@ -8,8 +8,8 @@ import plotly.express as px
 
 from utils import heart_rate_scale, load_run, mae_in_bpm
 
-RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
-OUTPUT_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
+RUN_DIRECTORY = Path("models") / "2026-10-22_14-13-16_large_seed0"
+OUTPUT_DIRECTORY = RUN_DIRECTORY
 N_REPEATS = 5
 RANDOM_SEED = 42
 
@@ -59,8 +59,8 @@ def permutation_importance(
 
     results = []
     for group_name, feature_names in FEATURE_GROUPS.items():
-        past_indices = column_indices(config["past_columns"], feature_names) if permute_past else []
-        future_indices = column_indices(config["future_columns"], feature_names) if permute_future else []
+        past_indices = column_indices(config["data"]["past_columns"], feature_names) if permute_past else []
+        future_indices = column_indices(config["data"]["future_columns"], feature_names) if permute_future else []
         if not past_indices and not future_indices:
             continue
 

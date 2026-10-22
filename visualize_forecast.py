@@ -11,7 +11,7 @@ from tensorflow import keras
 
 from utils import persistence_forecast, mae_in_bpm, heart_rate_scale, to_original_unit
 
-RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
+RUN_DIRECTORY = Path("models") / "2026-10-22_14-13-16_large_seed0"
 STEP_SECONDS = 5
 OUTPUT_DIRECTORY = RUN_DIRECTORY / "figures"
 
@@ -30,12 +30,14 @@ model, scaler, config, test_data = load_run(RUN_DIRECTORY)
 past_test, future_test, target_test = test_data["past"], test_data["future"], test_data["target"]
 bpm_scale = heart_rate_scale(scaler, config)
 
+CONFIG_DATA = config["data"]
+
 SCALED_COLUMNS = config["scaled_columns"]
 HEART_RATE_INDEX = config["heart_rate_index"]
-PAST_POWER_INDEX = config["past_columns"].index("power")
-FUTURE_POWER_INDEX = config["future_columns"].index("power")
-FUTURE_STEPS = config["future_steps"]
-seconds_ahead = np.arange(1, config["future_steps"] + 1) * STEP_SECONDS
+PAST_POWER_INDEX = CONFIG_DATA["past_columns"].index("power")
+FUTURE_POWER_INDEX = CONFIG_DATA["future_columns"].index("power")
+FUTURE_STEPS = CONFIG_DATA["future_steps"]
+seconds_ahead = np.arange(1, CONFIG_DATA["future_steps"] + 1) * STEP_SECONDS
 
 
 def plot_forecast_window(index: int, history_steps: int = 36, title: str | None = None) -> go.Figure:

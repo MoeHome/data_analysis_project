@@ -9,8 +9,8 @@ import plotly.graph_objects as go
 from utils import heart_rate_scale, load_run, step_seconds, mae_in_bpm, per_window_mae, persistence_forecast, \
     power_to_watts
 
-RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
-OUTPUT_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
+RUN_DIRECTORY = Path("models") / "2026-10-22_14-13-16_large_seed0"
+OUTPUT_DIRECTORY = RUN_DIRECTORY
 COMPARISON_SECONDS = 60  # length of the power averaging windows
 TOP_FRACTION = 0.20
 MIN_POWER_WATTS = 150  # at least one of the two averages must exceed this value
@@ -19,8 +19,8 @@ MIN_POWER_WATTS = 150  # at least one of the two averages must exceed this value
 def mean_power_watts(past, future, scaler, config: dict) -> tuple[np.ndarray, np.ndarray]:
     """Mean power of the last COMPARISON_SECONDS of the past window and of the forecast horizon."""
     comparison_steps = COMPARISON_SECONDS // step_seconds(config)
-    past_power = past[:, -comparison_steps:, config["past_columns"].index("power")].mean(axis=1)
-    future_power = future[:, :, config["future_columns"].index("power")].mean(axis=1)
+    past_power = past[:, -comparison_steps:, config["data"]["past_columns"].index("power")].mean(axis=1)
+    future_power = future[:, :, config["data"]["future_columns"].index("power")].mean(axis=1)
     return power_to_watts(past_power, scaler, config), power_to_watts(future_power, scaler, config)
 
 
@@ -97,7 +97,7 @@ def report_improvement(model, past, future, target, subsets: dict[str, np.ndarra
     """Print model vs. baseline error and bootstrap CI of the improvement for each subset."""
     prediction = model.predict({"past": past, "future": future}, verbose=0)
     bpm_scale = heart_rate_scale(scaler, config)
-    baseline = persistence_forecast(past, config["heart_rate_index"], config["future_steps"])
+    baseline = persistence_forecast(past, config["heart_rate_index"], config["data"]["future_steps"])
     model_mae = per_window_mae(prediction, target, bpm_scale)
     baseline_mae = per_window_mae(baseline, target, bpm_scale)
 
@@ -125,12 +125,12 @@ def main() -> None:
     report_improvement(model, past, future, target, subsets, scaler, config)
 
     prediction = model.predict({"past": past, "future": future}, verbose=0, batch_size=1024)
-    baseline = persistence_forecast(past, config["heart_rate_index"], config["future_steps"])
+    baseline = persistence_forecast(past, config["heart_rate_index"], config["data"]["future_steps"])
 
     summary, horizon_errors = evaluate_subsets(prediction, baseline, target, subsets, bpm_scale)
     print(summary.round(2).to_string(index=False))
 
-    seconds_per_step = 60 // config["future_steps"]
+    seconds_per_step = 60 // config["data"]["future_steps"]
     figure = plot_horizon_errors(horizon_errors, seconds_per_step,
                                  [f"top {TOP_FRACTION:.0%}", "rest"])
     OUTPUT_DIRECTORY.mkdir(exist_ok=True)

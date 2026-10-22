@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.express as px
 
-METRICS = ["heart_rate", "cadence", "power"]
+METRICS = ["heart_rate", "power", "cadence"]
 df = pd.read_csv("Dataframes/df_with_all_information.csv")
 
 
