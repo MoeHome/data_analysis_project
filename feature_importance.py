@@ -8,8 +8,8 @@ import plotly.express as px
 
 from utils import heart_rate_scale, load_run, mae_in_bpm
 
-RUN_DIRECTORY = Path("models") / "2026-10-21_15-23_gru64"
-OUTPUT_DIRECTORY = Path("models") / "2026-10-21_15-23_gru64"
+RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
+OUTPUT_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
 N_REPEATS = 5
 RANDOM_SEED = 42
 

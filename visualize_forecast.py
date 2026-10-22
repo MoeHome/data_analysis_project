@@ -11,7 +11,7 @@ from tensorflow import keras
 
 from utils import persistence_forecast, mae_in_bpm, heart_rate_scale, to_original_unit
 
-RUN_DIRECTORY = Path("models") / "2026-10-21_15-23_gru64"
+RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
 STEP_SECONDS = 5
 OUTPUT_DIRECTORY = RUN_DIRECTORY / "figures"
 

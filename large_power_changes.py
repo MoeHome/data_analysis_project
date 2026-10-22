@@ -8,8 +8,8 @@ import plotly.graph_objects as go
 
 from utils import heart_rate_scale, load_run, step_seconds, mae_in_bpm, per_window_mae, persistence_forecast, power_to_watts
 
-RUN_DIRECTORY = Path("models") / "2026-10-21_15-23_gru64"
-OUTPUT_DIRECTORY = Path("models") / "2026-10-21_15-23_gru64"
+RUN_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
+OUTPUT_DIRECTORY = Path("models") / "2026-10-22_11-16_gru64"
 COMPARISON_SECONDS = 60  # length of the power averaging windows
 TOP_FRACTION = 0.20
 MIN_POWER_WATTS = 150  # at least one of the two averages must exceed this value
@@ -61,7 +61,7 @@ def evaluate_subsets(prediction, baseline, target, subsets, bpm_scale) -> tuple[
             "model_mae_60s": model_errors[-1],
             "baseline_mae": baseline_errors.mean(),
             "baseline_mae_60s": baseline_errors[-1],
-            "improvement_%": 100 * (1 - model_errors.mean() / baseline_errors.mean()),
+            "improvement_%": np.round(100 * (1 - model_errors.mean() / baseline_errors.mean()), 2),
         })
     return pd.DataFrame(rows), horizon_errors
 
@@ -83,8 +83,6 @@ def plot_horizon_errors(horizon_errors: dict, seconds_per_step: int, subset_name
         font_size=18, height=650,
     )
     return figure
-
-
 
 
 def bootstrap_improvement(model_errors: np.ndarray, baseline_errors: np.ndarray,
